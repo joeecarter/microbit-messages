@@ -1,0 +1,16 @@
+{
+  "name": "messages",
+  "version": "0.0.1",
+  "description": "Small abstraction layer ontop of the default radio drivers for the micro:bit",
+  "keywords": [],
+  "author": "Joe Carter",
+  "license": "MIT",
+  "dependencies": {
+    "microbit": "lancaster-university/microbit"
+  },
+  "extraIncludes": [
+    "inc"
+  ],
+  "targetDependencies": {},
+  "bin": "./source"
+}
