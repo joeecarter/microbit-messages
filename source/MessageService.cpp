@@ -22,8 +22,6 @@ uint32_t bytes_to_uint(uint8_t *buffer) {
   *Message bus listener which is invoked whenever the radio receives a new packet
   */
 void MessageService::onRadioPacketReceived(MicroBitEvent) {
-  printf("onRadioPacketReceived() invoked.\n");
-
   // Get the packet
   PacketBuffer packet = this->radio->datagram.recv();
   int packet_len = packet.length();
@@ -43,17 +41,10 @@ void MessageService::onRadioPacketReceived(MicroBitEvent) {
 
   // If this packet for this reciever then process it
   if (receiver == microbit_serial_number() || receiver == 0) {
-    printf("This packet is for me!\n");
-  }
-
-  // Logging
-  //printf("sender = %u\n", (unsigned int)sender);
-  //printf("receiver = %u\n", (unsigned int)receiver);
-  //printf("packet_len = %d\n", packet_len);
-
-  // Invoke the callback
-  if (this->callback != NULL) {
-    (*(this->callback))(sender, payload, packet_len);
+    // Invoke the callback if it exists
+    if (this->callback != NULL) {
+      (*(this->callback))(sender, payload, packet_len);
+    }
   }
 }
 
@@ -89,6 +80,10 @@ MessageService::MessageService(MicroBit *uBit)
 
   // Subscribe to the message bus for when packets are recieved
   uBit->messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, this, &MessageService::onRadioPacketReceived);
+
+  // Print out the serial number to the serial port
+  unsigned int serial_number = (unsigned int)microbit_serial_number();
+  printf("My serial number is %u[0x%x]\n", serial_number, serial_number);
 }
 
 
