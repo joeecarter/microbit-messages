@@ -39,6 +39,6 @@ int main() {
 	messages.send(0, "Hello, World!");
 
 	// Terminate the main fiber gracefully so messages can be received after main ends.
-  release_fiber();
+	release_fiber();
 }
 ```
