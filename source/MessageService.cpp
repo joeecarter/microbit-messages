@@ -9,6 +9,7 @@ void int_to_bytes(uint32_t value, uint8_t *buffer) {
     for (int i = 0; i < 4; i++) buffer[3-i] = (value >> (i * 8));
 }
 
+
 /**
   * Helper function that converts an array of 4 bytes into an unsigned integer
   */
@@ -18,52 +19,49 @@ uint32_t bytes_to_uint(uint8_t *buffer) {
 
 
 /**
-  * Constructor.
-  *
-  * Initialise the messages service.
-  *
+  *Message bus listener which is invoked whenever the radio receives a new packet
   */
-MessageService::MessageService(MicroBit *uBit)
-{
-  // Store reference to the radio module
-  this->radio = &(uBit->radio);
-
-  // Subscribe to the message bus for when packets are recieved
-  uBit->messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, this, &MessageService::onRadioPacketReceived);
-}
-
-
-
-
 void MessageService::onRadioPacketReceived(MicroBitEvent) {
-  printf("onRadioPacketReceived) invoked.\n");
+  printf("onRadioPacketReceived() invoked.\n");
 
   // Get the packet
   PacketBuffer packet = this->radio->datagram.recv();
-  int rssi = packet.getRSSI();
-  int len = packet.length();
+  int packet_len = packet.length();
+
+  // If the packet is too small then ignore it
+  if (packet_len < PACKET_HEADER_SIZE+1) {
+    return;
+  }
+
+  // Get the payload of the packet
   uint8_t *payload = packet.getBytes();
 
-  // Sender and reciever
-  uint8_t sender = bytes_to_uint(&payload[0]);
-  uint8_t receiver = bytes_to_uint(&payload[4]);
+  // Get the sender and reciever and resize the payload
+  uint32_t sender = bytes_to_uint(&payload[0]);
+  uint32_t receiver = bytes_to_uint(&payload[4]);
+  payload += 8; packet_len -=  8;
 
-  // Resize the payload
-  payload = payload+8;
-  len = len - 8;
-
+  // If this packet for this reciever then process it
+  if (receiver == microbit_serial_number() || receiver == 0) {
+    printf("This packet is for me!\n");
+  }
 
   // Logging
-  printf("sender = %u\n", sender);
-  printf("receiver = %u\n", receiver);
-  printf("len = %u\n", len);
+  //printf("sender = %u\n", (unsigned int)sender);
+  //printf("receiver = %u\n", (unsigned int)receiver);
+  //printf("packet_len = %d\n", packet_len);
 
-  for (int i = 0; i < len; i++) {
-    printf("%c", payload[i]);
-
+  // Invoke the callback
+  if (this->callback != NULL) {
+    (*(this->callback))(sender, payload, packet_len);
   }
 }
 
+
+/**
+  * Sends some data to the micro:bit with the serial number receiver. This has the
+  * option to specify the sender which should usually be the serial number of this micro:bit.
+  */
 void MessageService::send(uint32_t sender, uint32_t receiver, uint8_t *buffer, int len) {
   // Create memory for the packet
   uint8_t packet[len+PACKET_HEADER_SIZE];
@@ -76,13 +74,43 @@ void MessageService::send(uint32_t sender, uint32_t receiver, uint8_t *buffer, i
   memcpy(&packet[8], &buffer[0], len);
 
   // Send the packet over the radio
-  int result = this->radio->datagram.send(&packet[0], len+PACKET_HEADER_SIZE);
-  if (result != MICROBIT_OK) {
-    printf("sddasd");
-  }
+  this->radio->datagram.send(&packet[0], len+PACKET_HEADER_SIZE);
 }
 
 
-//void MessageService::send(uint32_t receiver, uint8_t *data, int len) {
-//  printf("send(%u, %d, %p) invoked.\n", receiver, len, data);
-//}
+/**
+  * Constructor: Initialise the messages service.
+  */
+MessageService::MessageService(MicroBit *uBit)
+{
+  // Store reference to the radio module
+  this->radio = &(uBit->radio);
+  this->callback = NULL;
+
+  // Subscribe to the message bus for when packets are recieved
+  uBit->messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, this, &MessageService::onRadioPacketReceived);
+}
+
+
+/**
+  * Sends some data to the micro:bit with the serial number receiver.
+  */
+void MessageService::send(uint32_t receiver, uint8_t *buffer, int len) {
+  send(microbit_serial_number(), receiver, buffer, len);
+}
+
+
+/**
+  * Sends a string to the micro:bit with the serial number receiver.
+  */
+void MessageService::send(uint32_t receiver, ManagedString string) {
+  send(receiver, (uint8_t*)string.toCharArray(), string.length());
+}
+
+
+/**
+  * Sets the callack that is invoked whenever a new message has been received.
+  */
+void MessageService::setCallback(void (*callback)(uint32_t, uint8_t*, int)) {
+  this -> callback = callback;
+}

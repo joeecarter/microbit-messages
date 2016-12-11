@@ -36,39 +36,50 @@ uint32_t bytes_to_uint(uint8_t *buffer);
 class MessageService
 {
   private:
+
+  // Reference to the radio component that this is built ontop of
   MicroBitRadio *radio;
 
-  /**
-    * Receive buffer
-    */
-  uint8_t buffer[PACKET_MAX_SIZE];
+
+  // The callback which gets invoked when there is a new message
+  void (*callback)(uint32_t, uint8_t*, int);
+
 
   /**
-    * Handler for listening to the messages that the radio module has picked up
+    *Message bus listener which is invoked whenever the radio receives a new packet
     */
   void onRadioPacketReceived(MicroBitEvent);
+
+
+  /**
+    * Sends some data to the micro:bit with the serial number receiver. This has the option to specify the sender which should usually be the serial number of this micro:bit.
+    */
+  void send(uint32_t sender, uint32_t receiver, uint8_t *buffer, int len);
+
 
   public:
 
   /**
-    * Constructor.
-    *
-    * Initialise the messages service.
-    *
+    * Constructor: Initialise the messages service.
     */
   MessageService(MicroBit *uBit);
 
-
-  /**
-    * TODO: Comment and make this provate again later.
-    */
-  void send(uint32_t sender, uint32_t receiver, uint8_t *buffer, int len);
 
   /**
     * Sends some data to the micro:bit with the serial number receiver.
     */
   void send(uint32_t receiver, uint8_t *buffer, int len);
 
+  /**
+    * Sends a string to the micro:bit with the serial number receiver.
+    */
+  void send(uint32_t receiver, ManagedString string);
+
+
+  /**
+    * Sets the callack that is invoked whenever a new message has been received.
+    */
+  void setCallback(void (*callback)(uint32_t, uint8_t*, int));
 };
 
 
