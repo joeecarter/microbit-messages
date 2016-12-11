@@ -11,6 +11,5 @@
   "extraIncludes": [
     "inc"
   ],
-  "targetDependencies": {},
-  "bin": "./source"
+  "targetDependencies": {}
 }
