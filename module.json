@@ -1,6 +1,6 @@
 {
   "name": "microbit-messages",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Small abstraction layer ontop of the default radio drivers for the micro:bit wich provides a mechanism to send messages to specific micro:bits.",
   "keywords": [],
   "author": "Joe Carter",
